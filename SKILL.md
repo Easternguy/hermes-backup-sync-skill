@@ -7,7 +7,7 @@ tags: [backup, github, cron, devops, hermes, sync]
 
 # Hermes Backup Sync
 
-Backup your Hermes Agent config, skills, memory, and settings to a private GitHub repository. Uses a pure bash script (`no_agent: true`) — no LLM tokens burned on backups.
+Backup your Hermes Agent config, skills, memory, and settings to a private GitHub repository. Uses a pure bash script (`no_agent: true`); no LLM tokens burned on backups.
 
 ## How It Works
 
@@ -24,8 +24,8 @@ A daily cron job runs a bash script that:
 
 ## Files
 
-- **`sync-hermes-backup.sh`** — the backup script (standalone, all config via env vars)
-- **`SKILL.md`** — this documentation
+- **`sync-hermes-backup.sh`**: the backup script (standalone, all config via env vars)
+- **`SKILL.md`**: this documentation
 
 ## Setup
 
@@ -47,13 +47,13 @@ BACKUP_REPO=https://${GITHUB_TOKEN}@github.com/${GITHUB_USER}/hermes-backup.git
 ### 3. Configure the script
 The script has sensible defaults but you should review two sections:
 
-**`home/` selective copy** — edit the `for sub in ...` list to match the dotfiles your Hermes instance uses:
+**`home/` selective copy**: edit the `for sub in ...` list to match the dotfiles your Hermes instance uses:
 ```bash
 for sub in .hermes .profile; do
 ```
-⚠️ **Never add `.ssh` or other private-key material to this list.** Private keys must not be pushed to ANY remote — even a private repo. If you need key backups, encrypt them first (`age`, `git-crypt`) and back up the encrypted file. Also review what's inside each dotfile you add — config files sometimes embed tokens.
+⚠️ **Never add `.ssh` or other private-key material to this list.** Private keys must not be pushed to ANY remote, even a private repo. If you need key backups, encrypt them first (`age`, `git-crypt`) and back up the encrypted file. Also review what's inside each dotfile you add; config files sometimes embed tokens.
 
-**Excludes array** — add/remove runtime directories that don't need backing up:
+**Excludes array**: add/remove runtime directories that don't need backing up:
 ```bash
 EXCLUDES=(--exclude=.cache --exclude=.npm ...)
 ```
@@ -82,18 +82,18 @@ bash sync-hermes-backup.sh
 
 ## Customization
 
-- **Add directories** — edit the `for dir in ...` loop
-- **Exclude more files** — add patterns to the `EXCLUDES` array
-- **Change repo** — set `BACKUP_REPO` env var or default in the script
-- **Change git identity** — set `GIT_EMAIL` and `GIT_USERNAME` env vars
-- **Change destination** — set `BACKUP_DIR` env var (default: `/tmp/hermes-backup-sync`)
+- **Add directories**: edit the `for dir in ...` loop
+- **Exclude more files**: add patterns to the `EXCLUDES` array
+- **Change repo**: set `BACKUP_REPO` env var or default in the script
+- **Change git identity**: set `GIT_EMAIL` and `GIT_USERNAME` env vars
+- **Change destination**: set `BACKUP_DIR` env var (default: `/tmp/hermes-backup-sync`)
 
 ## Troubleshooting
 
 ### Script times out
 - Check for large new runtime caches in your Hermes data directory
 - Add them to the `EXCLUDES` array or the `home/` selective list
-- GitHub has a 100MB file size limit — check for oversized files:
+- GitHub has a 100MB file size limit; check for oversized files:
   ```bash
   find /tmp/hermes-backup-sync -size +90M -exec ls -lh {} \;
   ```
@@ -110,23 +110,23 @@ bash sync-hermes-backup.sh
 
 - **The script refuses to push to a public repo.** It checks the target repo's visibility via the GitHub API before every sync and aborts if the repo is public. Keep the backup repo private, always.
 - **No private keys, ever.** The default dotfile list deliberately excludes `.ssh`. Encrypt first if you must back up key material.
-- **Session history is off by default.** `.hermes_history` can contain sensitive commands and prompts; its copy line ships commented out — enable it only if you accept that.
+- **Session history is off by default.** `.hermes_history` can contain sensitive commands and prompts; its copy line ships commented out; enable it only if you accept that.
 - **The token lands in the clone's `.git/config`** (it's part of the remote URL). The script `chmod 700`s the backup working directory to keep other local users out. On shared machines, set `BACKUP_DIR` somewhere under your home instead of `/tmp`.
-- **Use a fine-grained PAT if you can** — scoped to just the backup repo with Contents read/write, instead of a classic `repo`-scope token.
-- **Secrets are templated, not copied.** `.env.template` and `auth.json.template` preserve structure with values stripped — verify this on your first push by reading both files in the repo.
+- **Use a fine-grained PAT if you can**: scoped to just the backup repo with Contents read/write, instead of a classic `repo`-scope token.
+- **Secrets are templated, not copied.** `.env.template` and `auth.json.template` preserve structure with values stripped; verify this on your first push by reading both files in the repo.
 
 ## Restoring From a Backup
 
 1. Clone the backup repo onto the new machine.
 2. Copy the directories (`skills/`, `memories/`, `cron/`, …) and top-level config files into your new Hermes data directory.
-3. Recreate `.env` from `.env.template` — fill in each value from your password manager.
+3. Recreate `.env` from `.env.template` and fill in each value from your password manager.
 4. Recreate `auth.json` from `auth.json.template` the same way (every string was redacted).
 5. Restore dotfiles from `home/` into the Hermes home directory.
 6. Start Hermes and verify: skills load, cron jobs listed, memory queries return results.
 
 ## Design Decisions
 
-- **`no_agent: true`** — backups don't need an LLM. Saves tokens and avoids failure modes from agent loops.
-- **Exclude at copy time** — never copy 12GB of caches just to delete them. Use `tar --exclude` to skip large cruft during the archive phase.
-- **Selective `home/` copy** — the home directory is often the largest. Only sync known-useful dotfiles rather than trying to exclude everything.
-- **Template files for secrets** — `.env.template` and `auth.json.template` commit the *structure* of your config without exposing values, so a restore knows what files to create.
+- **`no_agent: true`**: backups don't need an LLM. Saves tokens and avoids failure modes from agent loops.
+- **Exclude at copy time**: never copy 12GB of caches just to delete them. Use `tar --exclude` to skip large cruft during the archive phase.
+- **Selective `home/` copy**: the home directory is often the largest. Only sync known-useful dotfiles rather than trying to exclude everything.
+- **Template files for secrets**: `.env.template` and `auth.json.template` commit the *structure* of your config without exposing values, so a restore knows what files to create.

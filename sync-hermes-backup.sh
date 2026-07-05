@@ -31,7 +31,7 @@ REPO_PATH=$(echo "$BACKUP_REPO" | sed -E 's#.*github\.com/##; s#\.git$##')
 VISIBILITY=$(curl -s -H "Authorization: token $TOKEN" \
     "https://api.github.com/repos/$REPO_PATH" | grep -o '"private": *\(true\|false\)' | head -1 || true)
 if echo "$VISIBILITY" | grep -q "false"; then
-    echo "ERROR: $REPO_PATH is PUBLIC. Backups contain your configuration — refusing to push." >&2
+    echo "ERROR: $REPO_PATH is PUBLIC. Backups contain your configuration. Refusing to push." >&2
     echo "Make the repo private, or point BACKUP_REPO at a private repo." >&2
     exit 1
 fi
@@ -46,7 +46,7 @@ else
     git clone "$BACKUP_REPO" "$DST"
     cd "$DST"
 fi
-# The clone's .git/config contains the token — keep the directory private
+# The clone's .git/config contains the token: keep the directory private
 chmod 700 "$DST"
 # Works for fresh/empty repos too (first-ever backup run)
 git checkout -B main 2>/dev/null || git symbolic-ref HEAD refs/heads/main
@@ -104,7 +104,7 @@ EXCLUDES=(
 for dir in skills memories cron platforms plans skins hooks home; do
     if [ -d "$SRC/$dir" ]; then
         if [ "$dir" = "home" ]; then
-            # home/ is typically the largest — select only useful dotfiles.
+            # home/ is typically the largest; select only useful dotfiles.
             # Customize this list for your instance.
             #
             # SECURITY: never add .ssh or any private-key material here.
